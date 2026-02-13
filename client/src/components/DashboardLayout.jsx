@@ -18,8 +18,12 @@ const DashboardLayout = ({ title, children }) => {
             <button
               className="rounded-full bg-slate-800 px-4 py-1 text-slate-200 hover:bg-slate-700"
               onClick={() => {
-                localStorage.clear();
-                window.location.href = "/login";
+                localStorage.removeItem("token");
+                localStorage.removeItem("role");
+                localStorage.removeItem("name");
+                setTimeout(() => {
+                  window.location.href = "/";
+                }, 100);
               }}
             >
               Sign out

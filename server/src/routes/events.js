@@ -34,7 +34,9 @@ router.get("/my", authorize("EventCoordinator"), async (req, res) => {
 });
 
 router.get("/pending", authorize("HOD", "Dean", "InstitutionalHead"), async (req, res) => {
-  const events = await Event.find({ approvalStage: req.user.role, status: "Pending" }).lean();
+  const events = await Event.find({ approvalStage: req.user.role, status: "Pending" })
+    .populate("coordinatorId", "name email")
+    .lean();
   return res.json(events);
 });
 
@@ -114,7 +116,7 @@ router.post("/:id/complete", authorize("EventCoordinator", "AdminITC"), async (r
   event.status = "Completed";
   await event.save();
   await releaseAllocation(event._id);
-  return res.json({ message: "Event closed" });
+  return res.json({ message: "Event closed and resources released" });
 });
 
 router.get("/:id/health", authorize("EventCoordinator", "HOD", "Dean", "InstitutionalHead", "AdminITC"), async (req, res) => {

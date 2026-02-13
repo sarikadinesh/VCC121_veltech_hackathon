@@ -3,16 +3,39 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import DashboardLayout from "../components/DashboardLayout.jsx";
 import StatCard from "../components/StatCard.jsx";
 import ChartCard from "../components/ChartCard.jsx";
+import EventCard from "../components/EventCard.jsx";
+import EventModal from "../components/EventModal.jsx";
+import ApprovalModal from "../components/ApprovalModal.jsx";
 import api from "../services/api.js";
 import { useLiveUpdates } from "../services/useLiveUpdates.js";
 
 const CoordinatorDashboard = () => {
   const [events, setEvents] = useState([]);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const { venueUpdates, resourceUpdates } = useLiveUpdates();
 
   useEffect(() => {
-    api.get("/events/my").then((res) => setEvents(res.data)).catch(() => setEvents([]));
+    fetchEvents();
   }, []);
+
+  const fetchEvents = () => {
+    api.get("/events/my").then((res) => setEvents(res.data)).catch(() => setEvents([]));
+  };
+
+  const handleEventCreated = () => {
+    fetchEvents();
+  };
+
+  const handleApproveEvent = (event) => {
+    setSelectedEvent(event);
+    setShowApprovalModal(true);
+  };
+
+  const handleApprovalSuccess = () => {
+    fetchEvents();
+  };
 
   const healthCounts = events.reduce(
     (acc, event) => {
@@ -34,6 +57,15 @@ const CoordinatorDashboard = () => {
         <StatCard title="Total Events" value={events.length} />
         <StatCard title="Pending Approvals" value={events.filter((e) => e.status === "Pending").length} />
         <StatCard title="Risk Alerts" value={events.filter((e) => e.healthScore === "Red").length} />
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowEventModal(true)}
+          className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400"
+        >
+          + Create Event
+        </button>
       </div>
 
       <ChartCard title="Event Health Score">
@@ -71,6 +103,19 @@ const CoordinatorDashboard = () => {
           </ul>
         </div>
       </div>
+
+      <div className="rounded-2xl bg-slate-900/80 p-5 border border-slate-800/80 shadow-lg">
+        <h3 className="text-sm font-semibold mb-4">My Events</h3>
+        <div className="space-y-3">
+          {events.map((event) => (
+            <EventCard key={event._id} event={event} role="EventCoordinator" onApprove={handleApproveEvent} />
+          ))}
+          {!events.length && <p className="text-xs text-slate-400">No events yet</p>}
+        </div>
+      </div>
+
+      <EventModal isOpen={showEventModal} onClose={() => setShowEventModal(false)} onSuccess={handleEventCreated} />
+      <ApprovalModal isOpen={showApprovalModal} onClose={() => setShowApprovalModal(false)} event={selectedEvent} onSuccess={handleApprovalSuccess} />
     </DashboardLayout>
   );
 };

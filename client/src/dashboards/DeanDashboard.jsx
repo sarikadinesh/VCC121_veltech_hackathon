@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import DashboardLayout from "../components/DashboardLayout.jsx";
 import StatCard from "../components/StatCard.jsx";
 import ChartCard from "../components/ChartCard.jsx";
+import EventCard from "../components/EventCard.jsx";
+import ApprovalModal from "../components/ApprovalModal.jsx";
+import api from "../services/api.js";
 
 const utilizationData = [
   { name: "Mon", value: 55 },
@@ -13,6 +16,22 @@ const utilizationData = [
 ];
 
 const DeanDashboard = () => {
+  const [pending, setPending] = useState([]);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  useEffect(() => {
+    api.get("/events/pending").then((res) => setPending(res.data)).catch(() => setPending([]));
+  }, []);
+
+  const handleApprove = (event) => {
+    setSelectedEvent(event);
+    setShowApprovalModal(true);
+  };
+
+  const handleApprovalSuccess = () => {
+    api.get("/events/pending").then((res) => setPending(res.data));
+  };
   return (
     <DashboardLayout title="Dean Dashboard">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -42,6 +61,18 @@ const DeanDashboard = () => {
           ))}
         </div>
       </div>
+
+      <div className="rounded-2xl bg-slate-900/80 p-5 border border-slate-800/80 shadow-lg">
+        <h3 className="text-sm font-semibold mb-4">Pending Approvals</h3>
+        <div className="space-y-3">
+          {pending.map((event) => (
+            <EventCard key={event._id} event={event} role="Dean" onApprove={handleApprove} />
+          ))}
+          {!pending.length && <p className="text-xs text-slate-400">No pending approvals</p>}
+        </div>
+      </div>
+
+      <ApprovalModal isOpen={showApprovalModal} onClose={() => setShowApprovalModal(false)} event={selectedEvent} onSuccess={handleApprovalSuccess} />
     </DashboardLayout>
   );
 };

@@ -1,14 +1,31 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout.jsx";
 import StatCard from "../components/StatCard.jsx";
+import EventCard from "../components/EventCard.jsx";
+import ApprovalModal from "../components/ApprovalModal.jsx";
 import api from "../services/api.js";
 
 const HodDashboard = () => {
   const [pending, setPending] = useState([]);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
-    api.get("/events/pending").then((res) => setPending(res.data)).catch(() => setPending([]));
+    fetchPending();
   }, []);
+
+  const fetchPending = () => {
+    api.get("/events/pending").then((res) => setPending(res.data)).catch(() => setPending([]));
+  };
+
+  const handleApprove = (event) => {
+    setSelectedEvent(event);
+    setShowApprovalModal(true);
+  };
+
+  const handleApprovalSuccess = () => {
+    fetchPending();
+  };
 
   return (
     <DashboardLayout title="HOD Dashboard">
@@ -19,19 +36,15 @@ const HodDashboard = () => {
       </div>
       <div className="rounded-2xl bg-slate-900/80 p-5 border border-slate-800/80 shadow-lg">
         <h3 className="text-sm font-semibold mb-4">Pending Approvals</h3>
-        <div className="space-y-3 text-sm">
+        <div className="space-y-3">
           {pending.map((event) => (
-            <div key={event._id} className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{event.title}</p>
-                <p className="text-xs text-slate-400">{new Date(event.startTime).toLocaleString()}</p>
-              </div>
-              <span className="rounded-full bg-amber-500/20 text-amber-300 px-3 py-1 text-xs">Awaiting</span>
-            </div>
+            <EventCard key={event._id} event={event} role="HOD" onApprove={handleApprove} />
           ))}
-          {!pending.length && <p className="text-slate-400">No pending approvals</p>}
+          {!pending.length && <p className="text-xs text-slate-400">No pending approvals</p>}
         </div>
       </div>
+
+      <ApprovalModal isOpen={showApprovalModal} onClose={() => setShowApprovalModal(false)} event={selectedEvent} onSuccess={handleApprovalSuccess} />
     </DashboardLayout>
   );
 };
